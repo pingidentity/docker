@@ -28,6 +28,8 @@ Usage: ${0} {options}
         verbose docker build not using docker buildkit
     --dry-run
         does everything except actually call the docker command and prints it instead
+    --use-proxy
+        If the http_proxy or HTTP_PROXY variables are set, pass them on to docker build
     --help
         Display general usage information
 END_USAGE
@@ -72,6 +74,14 @@ do
         --dry-run)
             dryRun="echo"
             ;;
+        --use-proxy)
+            for v in http_proxy https_proxy HTTP_PROXY HTTPS_PROXY no_proxy NO_PROXY; do
+              if test -n "${!v}"
+              then
+                useProxy="$useProxy --build-arg $v=${!v}"
+              fi
+            done
+            ;;
         --fail-fast)
             failFast=true
             ;;
@@ -94,6 +104,7 @@ then
     echo "You must specify a product name to build, for example pingfederate or pingcentral"
     usage
 fi
+
 
 if test -z "${CI_COMMIT_REF_NAME}"
 then
@@ -190,7 +201,7 @@ do
         DOCKER_BUILDKIT=${DOCKER_BUILDKIT} docker image build \
             -f "${CI_PROJECT_DIR}/${productToBuild}/Product-staging" \
             -t "${_image}" \
-            ${progress} ${noCache} \
+            ${progress} ${noCache} ${useProxy} \
             --build-arg REGISTRY="${FOUNDATION_REGISTRY}" \
             --build-arg GIT_TAG="${ciTag}" \
             --build-arg DEVOPS_USER="${PING_IDENTITY_DEVOPS_USER}" \
@@ -248,7 +259,7 @@ do
             # shellcheck disable=SC2086
             DOCKER_BUILDKIT=${DOCKER_BUILDKIT} docker image build \
                 -t "${_image}" \
-                ${progress} ${noCache} \
+                ${progress} ${noCache} ${useProxy} \
                 --build-arg PRODUCT="${productToBuild}" \
                 --build-arg REGISTRY="${FOUNDATION_REGISTRY}" \
                 --build-arg GIT_TAG="${ciTag}" \

@@ -30,6 +30,8 @@ Usage: ${0} {options}
     -v, --version
         the version of the product for which to build a docker image
         this setting overrides the versions in the version file of the target product
+    --use-proxy
+        If the http_proxy or HTTP_PROXY variables are set, pass them on to docker build
     --verbose-build
         verbose docker build not using docker buildkit
     --dry-run
@@ -78,6 +80,15 @@ do
         --verbose-build)
             buildOptions="${buildOptions:+${buildOptions} }--verbose-build"
             ;;
+        --use-proxy)
+            for v in http_proxy https_proxy HTTP_PROXY HTTPS_PROXY no_proxy NO_PROXY; do
+              if test -n "${!v}"
+              then
+                buildOptions="${buildOptions} --use-proxy"
+                useProxy="${useProxy} --build-arg $v=${!v}"
+              fi
+            done
+            ;;
         -v|--version)
             shift
             test -z "${1}" && usage "You must provide a version to build"
@@ -107,8 +118,15 @@ CI_SCRIPTS_DIR="${CI_PROJECT_DIR:-.}/ci_scripts"
 . "${CI_SCRIPTS_DIR}/ci_tools.lib.sh"
 
 "${CI_SCRIPTS_DIR}/cleanup_docker.sh" full
-"${CI_SCRIPTS_DIR}/build_downloader.sh"
-"${CI_SCRIPTS_DIR}/build_foundation.sh"
+if test -n "${useProxy}"
+then
+  "${CI_SCRIPTS_DIR}/build_downloader.sh" --use-proxy
+  "${CI_SCRIPTS_DIR}/build_foundation.sh" --use-proxy
+else
+  "${CI_SCRIPTS_DIR}/build_downloader.sh"
+  "${CI_SCRIPTS_DIR}/build_foundation.sh"
+fi
+
 
 test -z "${_products}" && _products="apache-jmeter ldap-sdk-tools pingaccess pingcentral pingdataconsole pingdatagovernance pingdatagovernancepap pingdatasync pingdirectory pingdirectoryproxy pingdelegator pingfederate pingtoolkit"
 

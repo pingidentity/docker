@@ -19,6 +19,8 @@ Usage: ${0} {options}
         no docker cache
     --no-build-kit
         build without using build-kit
+    --use-proxy
+        If the http_proxy or HTTP_PROXY variables are set, pass them on to docker build
     --help
         Display general usage information
 END_USAGE
@@ -40,6 +42,14 @@ do
             ;;
         --verbose-build)
             progress="--progress plain"
+            ;;
+        --use-proxy)
+            for v in http_proxy https_proxy HTTP_PROXY HTTPS_PROXY no_proxy NO_PROXY; do
+              if test -n "${!v}"
+              then
+                useProxy="$useProxy --build-arg $v=${!v}"
+              fi
+            done
             ;;
         --help)
             usage
@@ -69,7 +79,7 @@ _start=$( date '+%s' )
 # shellcheck disable=SC2086
 DOCKER_BUILDKIT=${DOCKER_BUILDKIT} docker \
     image build \
-    ${noCache} ${progress} \
+    ${noCache} ${progress} ${useProxy} \
     -t "${FOUNDATION_REGISTRY}/pingdownloader:${ciTag}" \
     "${CI_PROJECT_DIR}/pingdownloader"
 _returnCode=${?}

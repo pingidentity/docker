@@ -34,6 +34,8 @@ Usage: ${0} {options}
         no docker cache
     --no-build-kit
         build without using build-kit
+    --use-proxy
+        If the http_proxy or HTTP_PROXY variables are set, pass them on to docker build
     --help
         Display general usage information
 END_USAGE
@@ -65,6 +67,14 @@ do
             shift
             test -z "${1}" && usage "You must provide a version to build"
             versionToBuild="${1}"
+            ;;
+        --use-proxy)
+            for v in http_proxy https_proxy HTTP_PROXY HTTPS_PROXY no_proxy NO_PROXY; do
+              if test -n "${!v}"
+              then
+                useProxy="$useProxy --build-arg $v=${!v}"
+              fi
+            done
             ;;
         --no-build-kit)
             DOCKER_BUILDKIT=0
@@ -137,7 +147,7 @@ _image="${FOUNDATION_REGISTRY}/pingcommon:${ciTag}"
 
 # shellcheck disable=SC2086
 DOCKER_BUILDKIT=${DOCKER_BUILDKIT} docker image build \
-    ${progress} ${noCache} \
+    ${progress} ${noCache} ${useProxy} \
      -t "${_image}" "${CI_PROJECT_DIR}/pingcommon"
 _returnCode=${?}
 _stop=$( date '+%s' )
@@ -162,7 +172,7 @@ _start=$( date '+%s' )
 _image="${FOUNDATION_REGISTRY}/pingdatacommon:${ciTag}"
 # shellcheck disable=SC2086
 DOCKER_BUILDKIT=${DOCKER_BUILDKIT} docker image build \
-    ${progress} ${noCache} \
+    ${progress} ${noCache} ${useProxy} \
     --build-arg REGISTRY="${FOUNDATION_REGISTRY}" \
     --build-arg GIT_TAG="${ciTag}" \
     -t "${_image}" "${CI_PROJECT_DIR}/pingdatacommon"
@@ -226,7 +236,7 @@ do
         _jvm_from=$( _getJVMImageForShimID "${_shim}" "${_jvm}" )
         # shellcheck disable=SC2086
         DOCKER_BUILDKIT=${DOCKER_BUILDKIT} docker image build \
-            ${progress} ${noCache} \
+            ${progress} ${noCache} ${useProxy} \
             --build-arg SHIM="${_jvm_from}" \
             -t "${_image}" "${CI_PROJECT_DIR}/pingjvm"
         _returnCode=${?}
@@ -254,7 +264,7 @@ _start=$( date '+%s' )
 _image="${FOUNDATION_REGISTRY}/pingbase:${ciTag}"
 # shellcheck disable=SC2086
 DOCKER_BUILDKIT=${DOCKER_BUILDKIT} docker image build \
-    ${progress} ${noCache} \
+    ${progress} ${noCache} ${useProxy} \
     -t "${_image}" "${CI_PROJECT_DIR}/pingbase"
 _returnCode=${?}
 _stop=$( date '+%s' )
