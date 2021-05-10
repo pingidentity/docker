@@ -80,7 +80,7 @@ ENV SHIM=${SHIM} \
 #-- Defaults to /SECRETS_DIR/encryption-password
     ENCRYPTION_PASSWORD_FILE= \
 #-- Files tailed once container has started
-    TAIL_LOG_FILES="${SERVER_ROOT_DIR}/logs/access" \
+    TAIL_LOG_FILES="${SERVER_ROOT_DIR}/logs/server.out ${SERVER_ROOT_DIR}/logs/errors ${SERVER_ROOT_DIR}/logs/policy-decision ${SERVER_ROOT_DIR}/logs/ldap-access" \
 #-- Directory for the profile used by the PingData manage-profile tool
     PD_PROFILE="${STAGING_DIR}/pd.profile"
 
